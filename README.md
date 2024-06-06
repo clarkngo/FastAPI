@@ -1,5 +1,10 @@
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=526682400)
 
+# Quick Run
+```
+uvicorn --host 0.0.0.0 webapp.main:app --reload
+```
+
 # Python HTTP API with GitHub Codespaces and Copilot
 
 _Run a Python API in this ready-to-use-repository in minutes_
