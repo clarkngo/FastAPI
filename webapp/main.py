@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from motor.motor_asyncio import AsyncIOMotorClient
 
 current_dir = dirname(abspath(__file__))
 static_path = join(current_dir, "static")
@@ -14,10 +15,22 @@ static_path = join(current_dir, "static")
 app = FastAPI()
 app.mount("/ui", StaticFiles(directory=static_path), name="ui")
 
+MONGO_DETAILS = os.getenv("MONGO_URI")
+client = AsyncIOMotorClient(MONGO_DETAILS)
+db = client.test
+print(db.list_collection_names())
+
+db = client.sample_mflix.movies_react_sample
+
 
 class Body(BaseModel):
     length: Union[int, None] = 20
 
+@app.get("/test")
+async def read_root():
+    # Example of using the database to fetch a document from the 'test' collection
+    document = await db.test.find_one()
+    return {"Hello": "World", "Document": document}
 
 @app.get('/')
 def root():
