@@ -3,33 +3,38 @@ import base64
 import json
 from typing import Union
 from os.path import dirname, abspath, join
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
+from pydantic import BaseModel
+from typing import Optional
+from bson import ObjectId
+from dotenv import load_dotenv
 
+load_dotenv()
 current_dir = dirname(abspath(__file__))
 static_path = join(current_dir, "static")
 
 app = FastAPI()
 app.mount("/ui", StaticFiles(directory=static_path), name="ui")
 
-MONGO_DETAILS = os.getenv("MONGO_URI")
+MONGO_DETAILS = os.getenv("MONGO_DETAILS")
 client = AsyncIOMotorClient(MONGO_DETAILS)
-db = client.test
-print(db.list_collection_names())
+db = client.sample_mflix
+print(f"Connecting to MongoDB with details: {MONGO_DETAILS}")
 
-db = client.sample_mflix.movies_react_sample
+class Movie(BaseModel):
+    title: str
+    # description: Optional[str] = None
+    # price: float
+    # is_offer: Optional[bool] = None
 
-
-class Body(BaseModel):
-    length: Union[int, None] = 20
 
 @app.get("/test")
 async def read_root():
     # Example of using the database to fetch a document from the 'test' collection
-    document = await db.test.find_one()
+    document = await db.movies_react_sample.find_one()
     return {"Hello": "World", "Document": document}
 
 @app.get('/')
@@ -69,14 +74,12 @@ async def get_movies_hard_coded():
         ]
     }
 
-@app.post('/generate')
-def generate(body: Body):
-    """
-    Generate a pseudo-random token ID of twenty characters by default. Example POST request body:
-
-    {
-        "length": 20
-    }
-    """
-    string = base64.b64encode(os.urandom(64))[:body.length].decode('utf-8')
-    return {'token': string}
+# sample
+# {"_id":{"$oid":"66637ac09d0106f27c7b8565"},"title":"Star Wars","releaseYear":"1977"}
+@app.get("/movies/{movie_id}", response_model=Movie)
+async def read_item(movie_id: str):
+    movie = await db.movies_react_sample.find_one({"_id": ObjectId(movie_id)})
+    if movie:
+        movie["_id"] = str(movie["_id"])
+        return movie
+    raise HTTPException(status_code=404, detail="Movie not found")
